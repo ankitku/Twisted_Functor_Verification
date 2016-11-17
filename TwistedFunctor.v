@@ -1,13 +1,14 @@
 Require Import Coq.Program.Tactics.
 Require Import Coq.Program.Basics.
 Require Import Coq.Init.Datatypes.
+Require Import Coq.Arith.Arith.
 Require Import Datatypes.
 
 Open Scope program_scope. 
 Open Scope core_scope. 
 Open Scope type_scope. 
 
-Class Monoid (a : Type) :=
+Class Monoid a :=
   {
     one : a;
     append : a -> a -> a;
@@ -18,11 +19,16 @@ Class Monoid (a : Type) :=
   }.
 
 
+Instance Mnat : Monoid nat.
+Proof.
+  split with 0 plus; intros; auto with arith.
+Defined.
+
 Notation " m1 ♢ m2 " := (append m1 m2)
   (at level 40, left associativity).
 
 
-Class Commutative_Monoid a `{Monoid (a : Type)} :=
+Class Commutative_Monoid a `{Monoid a} :=
   {    
     commutativity : forall x y, x ♢ y = y ♢ x
   }.
@@ -36,7 +42,6 @@ Class Functor (f : Type -> Type) :=
     ftor_homomorphism {a b c : Type} : forall (p : b -> c) (q : a -> b), fmap (p ∘ q) = (fmap p) ∘ (fmap q)
   }.
 
-Check id.
 
 Class Applicative_Functor f `{Functor (f : Type -> Type)} :=
   {
@@ -51,20 +56,25 @@ Class Applicative_Functor f `{Functor (f : Type -> Type)} :=
 Notation " fab <*> fa " := (app_star fab fa) (at level 40, left associativity).
 
 (*
-Class Monoidal_Functor (f : Type -> Type) :=
+Definition isomorphic_l {x : Type} {f : Type -> Type} (X : f (unit * x)) (Y : f x) : Prop := True.
+Definition isomorphic_r {x : Type} {f : Type -> Type} (X : x) (Y : f (unit * x)) : Prop := True.
+
+Class Monoidal_Functor f `{Functor (f : Type -> Type)} :=
   {
     mf_unit : f unit;
     mf_star {a b : Type} : f a -> f b -> f (a * b);
 
-    mf_left_identity : forall {a : Type} {v : f a}, (unit * a) = a -> mf_star mf_unit v = v ;
-    mf_right_identity : forall v, mf_star v mf_unit = v ;
-    mf_associativity : forall x y z, mf_star x (appmf_star y z) = mf_star (mf_star x y) z
+    mf_left_identity : forall {a : Type} {v : f a},  isomorphic_l (mf_star mf_unit v)  v ;
+    mf_right_identity : forall v, isomorphic_r (mf_star v mf_unit) v ;
+    mf_associativity : forall x y z, mf_star x (mf_star y z) = mf_star (mf_star x y) z
   }.
 
-✶
- *)
+Notation " u ✶ v " := (mf_star u v) (at level 40, left associativity).
+*)
 
-Class Action m (a : Type) `{Monoid (m : Type)}  :=
+
+
+Class Action m a `{Monoid m}  :=
   {
     act : m -> a -> a;
 
@@ -72,11 +82,15 @@ Class Action m (a : Type) `{Monoid (m : Type)}  :=
     act_comp : forall {m1 m2 : m} {e : a}, act (m1 ♢ m2) e = (act m1 (act m2 e))
   }.
 
-Notation "m • a" := (act m a) (at level 40, left associativity). 
+
+Notation "m • a" := (act m a) (at level 60, right associativity). 
 
 
-Class Distr_Action m a `{Action (m a : Type)} :=
+Class Distr_Action m a `{Action m a} `{Monoid a}:=
   {
-    d_act_annih : m • one = one
+    d_act_annih : forall {m1 : m}, m1 • one = one;
+    d_act_dist : forall {m1 : m} {a1 a2 : a},  m1 • (a1 ♢ a2) = (m1 • a1) ♢ (m1 • a2)
   }.
+
+
 
