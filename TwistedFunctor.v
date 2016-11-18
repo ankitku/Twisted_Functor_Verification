@@ -8,7 +8,7 @@ Open Scope program_scope.
 Open Scope core_scope. 
 Open Scope type_scope. 
 
-Class Monoid a :=
+Class Monoid (a : Type) :=
   {
     one : a;
     append : a -> a -> a;
@@ -92,5 +92,21 @@ Class Distr_Action m a `{Action m a} `{Monoid a}:=
     d_act_dist : forall {m1 : m} {a1 a2 : a},  m1 • (a1 ♢ a2) = (m1 • a1) ♢ (m1 • a2)
   }.
 
+Inductive sdp (a b : Type) : Type :=
+  | SDP : a -> b -> sdp a b.
 
+Notation "a ⋊ b" := sdp (at level 40, left associativity). 
+Notation "a ':⋊' b" := SDP (at level 40, left associativity). 
+
+Check SDP.
+
+Definition sdp_app {a m : Type} {a1 a2 : a} {m1 m2 : m} {Distr_Action m a} X Y :=
+  match X, Y with
+  |(SDP _ _ a1 m1),(SDP _ _ a2 m2) => ( SDP a m (a1 ♢ (m1 • a2)) (m1 ♢ m2) )
+  end.
+
+Instance Semidirect_Product {a b : Type} : Monoid sdp.
+Proof.
+  split with (SDP unit unit) (fun X Y => match X,Y with
+                                (SDP a1 m1),(SDP a2 m2) => ( SDP (a1 ♢ (m1 • a2)) (m1 ♢ m2) ) end ) .
 
