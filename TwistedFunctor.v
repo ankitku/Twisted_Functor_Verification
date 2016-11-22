@@ -99,14 +99,37 @@ Notation "a ⋊ b" := sdp (at level 40, left associativity).
 Notation "a ':⋊' b" := SDP (at level 40, left associativity). 
 
 Check SDP.
+Check sdp.
 
-Definition sdp_app {a m : Type} {a1 a2 : a} {m1 m2 : m} {Distr_Action m a} X Y :=
-  match X, Y with
-  |(SDP _ _ a1 m1),(SDP _ _ a2 m2) => ( SDP a m (a1 ♢ (m1 • a2)) (m1 ♢ m2) )
-  end.
 
-Instance Semidirect_Product {a b : Type} : Monoid sdp.
+Section SDP.
+  Variables (a m : Type) (A : Monoid a) (M : Monoid m) (AMA : Action m a) (DAMA : Distr_Action m a) (a1 a2 : a) (m1 m2 : m).
+  
+  Definition sdp_one := SDP a m one one.
+  
+  Definition sdp_app := fun X Y =>
+    match X, Y with
+    |(SDP _ _ a1 m1),(SDP _ _ a2 m2) => (SDP a m (a1 ♢ (m1 • a2)) (m1 ♢ m2))
+    end.
+
+Ltac crush :=
+  repeat match goal with
+         | [ H : ?T |- ?T ] => exact H
+         | [ |- ?T = ?T ] => reflexivity
+         | [H : sdp _ _ |- _] => destruct H
+         | [ |- context[sdp_one]] => unfold sdp_one
+         | [ |- context[sdp_app]] => unfold sdp_app
+         | [ |- context[_•_]] => try (rewrite act_id); try (rewrite act_comp); try (rewrite d_act_annih); try (rewrite d_act_dist)
+         | [ |- context[_♢_]] => try (rewrite left_identity); try (rewrite right_identity); try (rewrite associativity)          
+         end.
+
+Instance Semidirect_Product : Monoid (sdp a m).
 Proof.
-  split with (SDP unit unit) (fun X Y => match X,Y with
-                                (SDP a1 m1),(SDP a2 m2) => ( SDP (a1 ♢ (m1 • a2)) (m1 ♢ m2) ) end ) .
-
+  split with sdp_one sdp_app; intros.
+  crush.
+  crush.
+  crush.
+  rewrite associativity.
+  rewrite associativity.
+  crush.
+Qed.
