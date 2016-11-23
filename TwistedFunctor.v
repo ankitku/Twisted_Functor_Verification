@@ -55,22 +55,22 @@ Class Applicative_Functor f `{Functor (f : Type -> Type)} :=
 
 Notation " fab <*> fa " := (app_star fab fa) (at level 40, left associativity).
 
-(*
+
 Definition isomorphic_l {x : Type} {f : Type -> Type} (X : f (unit * x)) (Y : f x) : Prop := True.
-Definition isomorphic_r {x : Type} {f : Type -> Type} (X : x) (Y : f (unit * x)) : Prop := True.
+Definition isomorphic_r {x : Type} {f : Type -> Type} (X : f (x * unit)) (Y : f x) : Prop := True.
+Definition isomorphic_ass {x y z : Type} {f : Type -> Type} (B : f (x * (y * z))) (A : f (x * y * z)) : Prop := True.
 
 Class Monoidal_Functor f `{Functor (f : Type -> Type)} :=
   {
     mf_unit : f unit;
     mf_star {a b : Type} : f a -> f b -> f (a * b);
 
-    mf_left_identity : forall {a : Type} {v : f a},  isomorphic_l (mf_star mf_unit v)  v ;
-    mf_right_identity : forall v, isomorphic_r (mf_star v mf_unit) v ;
-    mf_associativity : forall x y z, mf_star x (mf_star y z) = mf_star (mf_star x y) z
+    mf_left_identity : forall {a : Type} {v : f a}, isomorphic_l (mf_star mf_unit v) v;
+    mf_right_identity : forall {a : Type} {v : f a}, isomorphic_r (mf_star v mf_unit) v;
+    mf_associativity : forall {a b c: Type} {x : f a} {y : f b} {z : f c}, isomorphic_ass (mf_star x (mf_star y z)) (mf_star (mf_star x y) z)
   }.
 
 Notation " u ✶ v " := (mf_star u v) (at level 40, left associativity).
-*)
 
 
 
@@ -133,3 +133,24 @@ Proof.
   rewrite associativity.
   crush.
 Qed.
+
+End SDP.
+
+
+Class ActionF (m a : Type) (f:Type -> Type) `{Monoid m} `{Monoid a} `{Functor f} :=
+  {
+    actf : m -> f a -> f a;
+
+    actf_id : forall {e : f a}, actf one e = e;
+    actf_comp : forall {m1 m2 : m} {e : f a}, actf (m1 ♢ m2) e = (actf m1 (actf m2 e));
+    uniformity : forall {g : a -> a} {u : f a} {m1 : m}, actf m1 (fmap g u) = fmap g (actf m1 u)
+  }.
+
+Notation " m ⊙ fa " := (actf m fa) (at level 40, left associativity).
+
+
+Class Distr_ActionAPF m a f `{ActionF m a f} `{Applicative_Functor f} :=
+  {
+    stoicism : forall {m1 : m} {a1 : a}, m1 ⊙ pure a1 = pure a1;
+    effectiveness : forall {m1 : m} {a1 : f a} {g : f (a -> a)}, m1 ⊙ (g <*> a1) = (m1 ⊙ g) <*> (m1 ⊙ a1) 
+  }.
